@@ -1,0 +1,98 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #121212;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+/* NAVBAR */
+
+.navbar {
+    background-color: #1e1e1e;
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    color: #00ff99;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 18px;
+}
+
+.nav-links a:hover {
+    color: #00ff99;
+}
+
+/* CONTAINER */
+
+.container {
+    text-align: center;
+    margin-top: 60px;
+}
+
+/* HEADINGS */
+
+h1 {
+    font-size: 50px;
+    color: #00ff99;
+}
+
+h2 {
+    color: #00ff99;
+}
+
+p {
+    font-size: 20px;
+}
+
+/* FORMS */
+
+input,
+textarea {
+    width: 320px;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+}
+
+/* BUTTONS */
+
+button {
+    padding: 12px 25px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background-color: #00ff99;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: #00cc77;
+}
+
+/* ENTRY BOX */
+
+.entry-box {
+    background-color: #1e1e1e;
+    padding: 20px;
+    width: 60%;
+    margin: auto;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.entry-box h3 {
+    color: #00ff99;
+}

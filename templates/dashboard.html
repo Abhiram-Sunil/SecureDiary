@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SecureDiary</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="navbar">
+
+        <div class="logo">
+            SecureDiary
+        </div>
+
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </div>
+
+    </div>
+
+    <div class="container">
+
+        <h1>SecureDiary Dashboard</h1>
+
+        <form method="POST" action="/add_entry">
+
+            <input type="text" name="title" placeholder="Diary Title" required>
+
+            <br><br>
+
+            <textarea name="content" placeholder="Write your diary..." rows="8" required></textarea>
+
+            <br><br>
+
+            <button type="submit">Save Entry</button>
+
+        </form>
+
+        <br><br>
+
+        <h2>Your Diary Entries</h2>
+
+        {% for entry in entries %}
+
+            <div class="entry-box">
+
+                <h3>{{ entry[1] }}</h3>
+
+                <p>{{ entry[2] }}</p>
+
+            </div>
+
+            <br>
+
+        {% endfor %}
+
+    </div>
+
+</body>
+</html>
