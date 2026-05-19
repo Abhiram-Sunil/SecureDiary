@@ -24,12 +24,12 @@ def create_table():
     ''')
 
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS diary_entries (
+    CREATE TABLE IF NOT EXISTS entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
+        username TEXT,
         content TEXT
     )
-''')
+  ''')
 
     conn.commit()
     conn.close()
@@ -55,9 +55,9 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute(
-            'SELECT * FROM users WHERE email = ?',
-            (email,)
-        )
+       "SELECT * FROM users WHERE email=?",
+       (email,)
+       )
 
         user = cursor.fetchone()
 
@@ -69,7 +69,7 @@ def login():
 
             if bcrypt.check_password_hash(stored_password, password):
 
-              session['user'] = email
+              session['username'] = user[1]
 
               return redirect('/dashboard')
             
@@ -109,14 +109,17 @@ def register():
 @app.route('/dashboard')
 def dashboard():
 
-    if 'user' not in session:
+    if 'username' not in session:
         return redirect('/login')
 
     conn = sqlite3.connect('database.db')
 
     cursor = conn.cursor()
 
-    cursor.execute('SELECT * FROM diary_entries')
+    cursor.execute(
+    "SELECT * FROM entries WHERE username=?",
+    (session['username'],)
+    )
 
     entries = cursor.fetchall()
 
@@ -124,19 +127,43 @@ def dashboard():
 
     return render_template('dashboard.html', entries=entries)
 
-@app.route('/add_entry', methods=['POST'])
-def add_entry():
+@app.route('/add', methods=['GET', 'POST'])
+def add():
 
-    title = request.form['title']
-    content = request.form['content']
+    if 'username' not in session:
+        return redirect('/login')
+
+    if request.method == 'POST':
+
+        content = request.form['content']
+
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO entries (username, content) VALUES (?, ?)",
+            (session['username'], content)
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect('/dashboard')
+
+    return render_template('add.html')
+
+@app.route('/delete/<int:id>')
+def delete(id):
+
+    if 'username' not in session:
+        return redirect('/login')
 
     conn = sqlite3.connect('database.db')
-
     cursor = conn.cursor()
 
     cursor.execute(
-        'INSERT INTO diary_entries (title, content) VALUES (?, ?)',
-        (title, content)
+        "DELETE FROM entries WHERE id=? AND username=?",
+        (id, session['username'])
     )
 
     conn.commit()
@@ -144,11 +171,43 @@ def add_entry():
 
     return redirect('/dashboard')
 
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit(id):
+
+    if 'username' not in session:
+        return redirect('/login')
+
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+
+        content = request.form['content']
+
+        cursor.execute(
+            "UPDATE entries SET content=? WHERE id=? AND username=?",
+            (content, id, session['username'])
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect('/dashboard')
+
+    cursor.execute(
+        "SELECT * FROM entries WHERE id=? AND username=?",
+        (id, session['username'])
+    )
+
+    entry = cursor.fetchone()
+
+    conn.close()
+
+    return render_template('edit.html', entry=entry)
+
 @app.route('/logout')
 def logout():
-
-    session.pop('user', None)
-
+    session.clear()
     return redirect('/login')
 
 if __name__ == '__main__':
