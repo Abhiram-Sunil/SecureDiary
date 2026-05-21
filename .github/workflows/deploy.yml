@@ -29,8 +29,8 @@ jobs:
 
             git pull origin main
 
-            sudo docker stop securediary || true
-            sudo docker rm securediary || true
+            sudo docker stop $(sudo docker ps -aq) || true
+            sudo docker rm $(sudo docker ps -aq) || true
 
             sudo docker build -t securediary .
 
