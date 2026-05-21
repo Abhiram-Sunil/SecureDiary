@@ -3,13 +3,13 @@ from flask_bcrypt import Bcrypt
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = 'securesecretkey'  # Replace with a real secret key
-
+app.secret_key = 'securesecretkey'
 
 bcrypt = Bcrypt(app)
 
 # CREATE DATABASE TABLE
 def create_table():
+
     conn = sqlite3.connect('database.db')
 
     cursor = conn.cursor()
@@ -19,17 +19,18 @@ def create_table():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
             email TEXT,
-            password TEXT
+            password TEXT,
+            role TEXT DEFAULT 'user'
         )
     ''')
 
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS entries (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        content TEXT
-    )
-  ''')
+        CREATE TABLE IF NOT EXISTS entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            content TEXT
+        )
+    ''')
 
     conn.commit()
     conn.close()
@@ -55,9 +56,9 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute(
-       "SELECT * FROM users WHERE email=?",
-       (email,)
-       )
+            "SELECT * FROM users WHERE email=?",
+            (email,)
+        )
 
         user = cursor.fetchone()
 
@@ -69,10 +70,11 @@ def login():
 
             if bcrypt.check_password_hash(stored_password, password):
 
-              session['username'] = user[1]
+                session['username'] = user[1]
+                session['role'] = user[4]
 
-              return redirect('/dashboard')
-            
+                return redirect('/dashboard')
+
         return "Invalid Email or Password"
 
     return render_template('login.html')
@@ -87,16 +89,22 @@ def register():
         email = request.form['email']
         password = request.form['password']
 
-        # HASH PASSWORD
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         conn = sqlite3.connect('database.db')
 
         cursor = conn.cursor()
 
+        # ROLE LOGIC
+        if email == 'admin@securediary.com':
+            role = 'admin'
+        else:
+            role = 'user'
+
+        # INSERT USER
         cursor.execute(
-            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-            (username, email, hashed_password)
+            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+            (username, email, hashed_password, role)
         )
 
         conn.commit()
@@ -106,6 +114,7 @@ def register():
 
     return render_template('register.html')
 
+# DASHBOARD
 @app.route('/dashboard')
 def dashboard():
 
@@ -117,8 +126,8 @@ def dashboard():
     cursor = conn.cursor()
 
     cursor.execute(
-    "SELECT * FROM entries WHERE username=?",
-    (session['username'],)
+        "SELECT * FROM entries WHERE username=?",
+        (session['username'],)
     )
 
     entries = cursor.fetchall()
@@ -127,6 +136,100 @@ def dashboard():
 
     return render_template('dashboard.html', entries=entries)
 
+# ADMIN PANEL
+@app.route('/admin')
+def admin():
+
+    if 'username' not in session:
+        return redirect('/login')
+
+    if session.get('role') != 'admin':
+        return "Access Denied"
+
+    conn = sqlite3.connect('database.db')
+
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM entries")
+    entries = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        'admin.html',
+        users=users,
+        entries=entries
+    )
+
+@app.route('/delete_user/<int:id>')
+def delete_user(id):
+
+    if 'username' not in session:
+        return redirect('/login')
+
+    if session.get('role') != 'admin':
+        return "Access Denied"
+
+    conn = sqlite3.connect('database.db')
+
+    cursor = conn.cursor()
+
+    # GET USERNAME
+    cursor.execute(
+        "SELECT username FROM users WHERE id=?",
+        (id,)
+    )
+
+    user = cursor.fetchone()
+
+    if user:
+
+        username = user[0]
+
+        # DELETE USER ENTRIES
+        cursor.execute(
+            "DELETE FROM entries WHERE username=?",
+            (username,)
+        )
+
+        # DELETE USER
+        cursor.execute(
+            "DELETE FROM users WHERE id=?",
+            (id,)
+        )
+
+    conn.commit()
+    conn.close()
+
+    return redirect('/admin')
+
+@app.route('/admin_delete_entry/<int:id>')
+def admin_delete_entry(id):
+
+    if 'username' not in session:
+        return redirect('/login')
+
+    if session.get('role') != 'admin':
+        return "Access Denied"
+
+    conn = sqlite3.connect('database.db')
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "DELETE FROM entries WHERE id=?",
+        (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect('/admin')
+
+# ADD ENTRY
 @app.route('/add', methods=['GET', 'POST'])
 def add():
 
@@ -138,6 +241,7 @@ def add():
         content = request.form['content']
 
         conn = sqlite3.connect('database.db')
+
         cursor = conn.cursor()
 
         cursor.execute(
@@ -152,6 +256,7 @@ def add():
 
     return render_template('add.html')
 
+# DELETE ENTRY
 @app.route('/delete/<int:id>')
 def delete(id):
 
@@ -159,6 +264,7 @@ def delete(id):
         return redirect('/login')
 
     conn = sqlite3.connect('database.db')
+
     cursor = conn.cursor()
 
     cursor.execute(
@@ -171,6 +277,7 @@ def delete(id):
 
     return redirect('/dashboard')
 
+# EDIT ENTRY
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit(id):
 
@@ -178,6 +285,7 @@ def edit(id):
         return redirect('/login')
 
     conn = sqlite3.connect('database.db')
+
     cursor = conn.cursor()
 
     if request.method == 'POST':
@@ -205,9 +313,12 @@ def edit(id):
 
     return render_template('edit.html', entry=entry)
 
+# LOGOUT
 @app.route('/logout')
 def logout():
+
     session.clear()
+
     return redirect('/login')
 
 if __name__ == '__main__':

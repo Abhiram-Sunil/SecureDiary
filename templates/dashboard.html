@@ -60,6 +60,14 @@
             </h1>
         </div>
 
+        {% if session.role == 'admin' %}
+
+        <a href="/admin" class="btn btn-warning me-2">
+        Admin Panel
+        </a>
+
+        {% endif %}
+
         <div>
             <a href="/add" class="btn add-btn custom-btn text-white">
                 <i class="fas fa-plus"></i>
