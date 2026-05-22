@@ -3,6 +3,20 @@ from flask_bcrypt import Bcrypt
 import sqlite3
 
 app = Flask(__name__)
+
+@app.after_request
+def add_security_headers(response):
+
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+
+    response.headers['Content-Security-Policy'] = "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'"
+
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    return response
+
 app.secret_key = 'securesecretkey'
 
 bcrypt = Bcrypt(app)
